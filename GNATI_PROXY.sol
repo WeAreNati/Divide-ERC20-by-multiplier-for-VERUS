@@ -5,11 +5,15 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /*
- * @title Contract function is to devide a ERC20's token supply to fit
+ * @title Contract function is to devide a ERC20's token supply 
+ * and send it to the Verus Bridge to comply with the 64bit character
+ * limit within Verus. (9,999,999,999B)
  * 
- * This is a proxy bridge.
+ * This is a proxy bridge that will store the ERC20 token and create a new token
+ * until the new token is returned to the contract and the correct amount 
+ * of the ERC token is sent back to the user. 
  *
- * Code is currrently routed for the VerusTestBridge for testing.
+ * Code is currrently routed to the VerusTestBridge for testing.
  *
  * @dev implementation
  */
