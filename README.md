@@ -23,6 +23,6 @@ Thank you for your time & efforts.
 
 - IlluminatiCoin Community
 
-PS The GoerliNATI contract used for testing is - 0x4aD8300d9349428a49526c3a85B2ed975Cc6E781
+         The GoerliNATI contract used for testing is - 0x4aD8300d9349428a49526c3a85B2ed975Cc6E781
    
          The Original NATI contract is 0x0B9aE6b1D4f0EEeD904D1CEF68b9bd47499f3fFF
