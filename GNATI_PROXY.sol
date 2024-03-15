@@ -47,7 +47,7 @@ interface VerusBridge {
 }
  
 contract GNATI_BRIDGE_TEST_0 is ERC20{
-    address payable immutable linkedERC20; //the token that this contract will accept to divide an dmultiply
+    address payable immutable linkedERC20; //the token that this contract will accept to divide an multiply
     address private immutable thisTokeniaddress;  //this proxytokens iaddress in hex
     uint256 private constant cap = 999999999999999999;  //9,999,999,999.99999999
     address private immutable verusBridgeContract; //verus bridgecontract
