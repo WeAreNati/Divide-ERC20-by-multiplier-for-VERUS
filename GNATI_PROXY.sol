@@ -49,7 +49,7 @@ interface VerusBridge {
 contract GNATI_BRIDGE_TEST_0 is ERC20{
     address payable immutable linkedERC20; //the token that this contract will accept to divide an multiply
     address private immutable thisTokeniaddress;  //this proxytokens iaddress in hex
-    uint256 private constant cap = 999999999999999999;  //9,999,999,999.99999999
+    uint256 private constant cap = (10 ** 28) - 1;  //9.999B in 18 decimals
     address private immutable verusBridgeContract; //verus bridgecontract
     uint256 private constant multiplier = 1000000;  // to convert from 18 decomials ETH to 8 deimals Verus
     using SafeERC20 for GNATI_BRIDGE_TEST_0;
