@@ -1,11 +1,11 @@
-/ SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /*
- * @title Contract function is to devide a ERC20's token supply 
+ * @title Contract function is to divide a ERC20's token supply 
  * and send it to the Verus Bridge to comply with the 64bit character
  * limit within Verus. (9,999,999,999B)
  * 
@@ -49,7 +49,7 @@ interface VerusBridge {
 contract GNATI_BRIDGE_TEST_0 is ERC20{
     address payable immutable linkedERC20; //the token that this contract will accept to divide an multiply
     address private immutable thisTokeniaddress;  //this proxytokens iaddress in hex
-    uint256 private constant cap = 999999999999999999;  //9,999,999,999.99999999
+    uint256 private constant cap = (10 ** 28) - 1;  //9.999B in 18 decimals
     address private immutable verusBridgeContract; //verus bridgecontract
     uint256 private constant multiplier = 1000000;  // to convert from 18 decomials ETH to 8 deimals Verus
     using SafeERC20 for GNATI_BRIDGE_TEST_0;
@@ -57,9 +57,10 @@ contract GNATI_BRIDGE_TEST_0 is ERC20{
 
     error ERC20ExceededCap(uint256 increasedSupply, uint256 cap);
     uint8 constant DEST_PKH = 2;
+    uint8 constant DEST_ID = 4;
     uint32 constant VALID = 1;
     uint64 constant public verusvETHTransactionFee = 300000; //0.003 vETH 8 decimals
-    // Currenctly coded for VerusTestnet
+    // TODO: Currenctly coded for VerusTestnet
     address bridgeiaddress = 0xffEce948b8A38bBcC813411D2597f7f8485a0689;
     address vETHiaddress = 0x67460C2f56774eD27EeB8685f29f6CEC0B090B00;
     // address bridgeiaddress = 0x0200EbbD26467B866120D84A0d37c82CdE0acAEB;
@@ -79,7 +80,6 @@ contract GNATI_BRIDGE_TEST_0 is ERC20{
         address owner = _msgSender();
 
         require (owner == verusBridgeContract); 
-        _transfer(owner, address(this), amount);
         _burn(msg.sender, amount);
 
         //send the scaled up amount back to the user on ETH
@@ -89,9 +89,12 @@ contract GNATI_BRIDGE_TEST_0 is ERC20{
     }
 
     //only can send to r-address on Verus
-    function swapToBridge(uint256 _amountToSwap, address raddressTo) public payable {
+    function swapToBridge(uint256 _amountToSwap, address addressTo, uint8 addressType) public payable {
         
         require(msg.value == 0.003 ether);
+
+        // make sure amount being sent is a multiple of the multiplier to stop wei being lost in truncation
+        require(_amountToSwap % multiplier == 0);
 
         // send the real linked ERC20 asset to this contract and it will be stored.
         GNATI_BRIDGE_TEST_0(linkedERC20).safeTransferFrom(msg.sender, address(this), _amountToSwap);
@@ -102,20 +105,22 @@ contract GNATI_BRIDGE_TEST_0 is ERC20{
         if ((amountToMint + totalSupply()) > cap) {
             revert ERC20ExceededCap((amountToMint + totalSupply()) , cap);
         }
-        _mint(verusBridgeContract, amountToMint);
+        _mint(address(this), amountToMint);
+        _approve(address(this), verusBridgeContract, amountToMint);
 
         uint64 verusAmount = uint64(amountToMint / SATS_TO_WEI_STD); // from 18 decimals to 8
 
-        VerusBridge(verusBridgeContract).sendTransfer{value: msg.value}(buildReserveTransfer(verusAmount, raddressTo));
+        VerusBridge(verusBridgeContract).sendTransfer{value: msg.value}(buildReserveTransfer(verusAmount, addressTo, addressType));
     }
   
 
-    function buildReserveTransfer (uint64 value, address sendTo) private view returns (Objects.CReserveTransfer memory) {
+    function buildReserveTransfer (uint64 value, address sendTo, uint8 addressType) private view returns (Objects.CReserveTransfer memory) {
         
         Objects.CReserveTransfer memory LPtransfer;
       
         LPtransfer.version = 1;
-        LPtransfer.destination.destinationtype = DEST_PKH; //only can send to r-address
+        require(addressType == DEST_PKH || addressType == DEST_ID);
+        LPtransfer.destination.destinationtype = addressType; //only can send to r-address or i-address
         LPtransfer.destcurrencyid = bridgeiaddress;
         LPtransfer.destsystemid = address(0);
         LPtransfer.secondreserveid = address(0);
