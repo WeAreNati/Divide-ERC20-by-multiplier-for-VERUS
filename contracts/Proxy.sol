@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -46,13 +46,13 @@ interface VerusBridge {
     function sendTransfer(Objects.CReserveTransfer memory _transfer) external payable;
 }
  
-contract GNATI_BRIDGE_TEST_0 is ERC20{
+contract GNATI_BRIDGE is ERC20{
     address payable immutable linkedERC20; //the token that this contract will accept to divide an multiply
     address private immutable thisTokeniaddress;  //this proxytokens iaddress in hex
     uint256 private constant cap = (10 ** 28) - 1;  //9.999B in 18 decimals
     address private immutable verusBridgeContract; //verus bridgecontract
-    uint256 private constant multiplier = 1000000;  // to convert from 18 decomials ETH to 8 deimals Verus
-    using SafeERC20 for GNATI_BRIDGE_TEST_0;
+    uint256 private constant multiplier = 1000000;  // 1M
+    using SafeERC20 for GNATI_BRIDGE;
     uint constant SATS_TO_WEI_STD = 10000000000;
 
     error ERC20ExceededCap(uint256 increasedSupply, uint256 cap);
@@ -61,11 +61,12 @@ contract GNATI_BRIDGE_TEST_0 is ERC20{
     uint32 constant VALID = 1;
     uint64 constant public verusvETHTransactionFee = 300000; //0.003 vETH 8 decimals
     // TODO: Currenctly coded for VerusTestnet
-    address bridgeiaddress = 0xffEce948b8A38bBcC813411D2597f7f8485a0689;
-    address vETHiaddress = 0x67460C2f56774eD27EeB8685f29f6CEC0B090B00;
+    address constant public bridgeiaddress = 0xffEce948b8A38bBcC813411D2597f7f8485a0689;
+    address constant public  vETHiaddress = 0x67460C2f56774eD27EeB8685f29f6CEC0B090B00;
+
+    // NOTE: Theses are mainnet addresses
     // address bridgeiaddress = 0x0200EbbD26467B866120D84A0d37c82CdE0acAEB;
     // address vETHiaddress = 0x454CB83913D688795E237837d30258d11ea7c752;
-    using SafeERC20 for GNATI_BRIDGE_TEST_0;
 
     constructor (string memory _name, string memory _symbol, address payable _linkedERC20,
         address iaddress, address _verusBridgeContract) 
@@ -91,13 +92,13 @@ contract GNATI_BRIDGE_TEST_0 is ERC20{
     //only can send to r-address on Verus
     function swapToBridge(uint256 _amountToSwap, address addressTo, uint8 addressType) public payable {
         
-        require(msg.value == 0.003 ether);
+        require(msg.value == 0.003 ether, "0.003 ETH required");
 
         // make sure amount being sent is a multiple of the multiplier to stop wei being lost in truncation
-        require(_amountToSwap % multiplier == 0);
+        require(_amountToSwap % multiplier == 0, "not divisable by 1000000");
 
         // send the real linked ERC20 asset to this contract and it will be stored.
-        GNATI_BRIDGE_TEST_0(linkedERC20).safeTransferFrom(msg.sender, address(this), _amountToSwap);
+        GNATI_BRIDGE(linkedERC20).safeTransferFrom(msg.sender, address(this), _amountToSwap);
         
         // amount to mint of proxy token that only the bridge accepts
         uint256 amountToMint = _amountToSwap / multiplier;
