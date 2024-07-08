@@ -49,8 +49,8 @@ interface VerusBridge {
 contract GNATI_BRIDGE is ERC20{
     address payable immutable linkedERC20; //the token that this contract will accept to divide an multiply
     address private immutable thisTokeniaddress;  //this proxytokens iaddress in hex
-    uint256 private constant cap = (10 ** 28) - 1;  //9.999B in 18 decimals
-    uint256 private constant multiplier = 1000000;  // 1M
+    uint256 private constant cap = 3300000000000000000000000000;  // 3.3B in 18 decimals
+    uint256 private constant multiplier = 10000;  // 10k
     using SafeERC20 for GNATI_BRIDGE;
     uint constant SATS_TO_WEI_STD = 10000000000;
 
