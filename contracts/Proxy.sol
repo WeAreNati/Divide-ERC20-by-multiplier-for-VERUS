@@ -50,7 +50,6 @@ contract GNATI_BRIDGE is ERC20{
     address payable immutable linkedERC20; //the token that this contract will accept to divide an multiply
     address private immutable thisTokeniaddress;  //this proxytokens iaddress in hex
     uint256 private constant cap = (10 ** 28) - 1;  //9.999B in 18 decimals
-    address private immutable verusBridgeContract; //verus bridgecontract
     uint256 private constant multiplier = 1000000;  // 1M
     using SafeERC20 for GNATI_BRIDGE;
     uint constant SATS_TO_WEI_STD = 10000000000;
@@ -69,18 +68,16 @@ contract GNATI_BRIDGE is ERC20{
     // address vETHiaddress = 0x454CB83913D688795E237837d30258d11ea7c752;
 
     constructor (string memory _name, string memory _symbol, address payable _linkedERC20,
-        address iaddress, address _verusBridgeContract) 
+        address iaddress) 
         ERC20(_name, _symbol){
         linkedERC20 = _linkedERC20;
         thisTokeniaddress = iaddress;
-        verusBridgeContract = _verusBridgeContract;
     }
 
 
     function transfer(address to, uint256 amount) public virtual override returns (bool) {
-        address owner = _msgSender();
 
-        require (owner == verusBridgeContract); 
+        require(_balances[msg.sender] >= amount, "ERC20: transfer amount exceeds balance");
         _burn(msg.sender, amount);
 
         //send the scaled up amount back to the user on ETH
@@ -90,7 +87,7 @@ contract GNATI_BRIDGE is ERC20{
     }
 
     //only can send to r-address on Verus
-    function swapToBridge(uint256 _amountToSwap, address addressTo, uint8 addressType) public payable {
+    function swapToBridge(uint256 _amountToSwap, address addressTo, uint8 addressType, address bridgeAddress) public payable {
         
         require(msg.value == 0.003 ether, "0.003 ETH required");
 
@@ -107,11 +104,11 @@ contract GNATI_BRIDGE is ERC20{
             revert ERC20ExceededCap((amountToMint + totalSupply()) , cap);
         }
         _mint(address(this), amountToMint);
-        _approve(address(this), verusBridgeContract, amountToMint);
+        _approve(address(this), bridgeAddress, amountToMint);
 
         uint64 verusAmount = uint64(amountToMint / SATS_TO_WEI_STD); // from 18 decimals to 8
 
-        VerusBridge(verusBridgeContract).sendTransfer{value: msg.value}(buildReserveTransfer(verusAmount, addressTo, addressType));
+        VerusBridge(bridgeAddress).sendTransfer{value: msg.value}(buildReserveTransfer(verusAmount, addressTo, addressType));
     }
   
 
