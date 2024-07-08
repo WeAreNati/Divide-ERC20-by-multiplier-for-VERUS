@@ -77,7 +77,6 @@ contract GNATI_BRIDGE is ERC20{
 
     function transfer(address to, uint256 amount) public virtual override returns (bool) {
 
-        require(_balances[msg.sender] >= amount, "ERC20: transfer amount exceeds balance");
         _burn(msg.sender, amount);
 
         //send the scaled up amount back to the user on ETH
