@@ -50,7 +50,7 @@ contract GNATI_BRIDGE is ERC20{
     address payable immutable linkedERC20; //the token that this contract will accept to divide an multiply
     address private immutable thisTokeniaddress;  //this proxytokens iaddress in hex
     uint256 private constant cap = (10 ** 28) - 1;  //9.999B in 18 decimals
-    uint256 private constant multiplier = 1000000;  // 1M
+    uint256 private constant multiplier = 10000;  // 10K
     using SafeERC20 for GNATI_BRIDGE;
     uint constant SATS_TO_WEI_STD = 10000000000;
 
@@ -59,13 +59,6 @@ contract GNATI_BRIDGE is ERC20{
     uint8 constant DEST_ID = 4;
     uint32 constant VALID = 1;
     uint64 constant public verusvETHTransactionFee = 300000; //0.003 vETH 8 decimals
-    // TODO: Currenctly coded for VerusTestnet
-    address constant public bridgeiaddress = 0xffEce948b8A38bBcC813411D2597f7f8485a0689;
-    address constant public  vETHiaddress = 0x67460C2f56774eD27EeB8685f29f6CEC0B090B00;
-
-    // NOTE: Theses are mainnet addresses
-    // address bridgeiaddress = 0x0200EbbD26467B866120D84A0d37c82CdE0acAEB;
-    // address vETHiaddress = 0x454CB83913D688795E237837d30258d11ea7c752;
 
     constructor (string memory _name, string memory _symbol, address payable _linkedERC20,
         address iaddress) 
@@ -86,7 +79,7 @@ contract GNATI_BRIDGE is ERC20{
     }
 
     //only can send to r-address on Verus
-    function swapToBridge(uint256 _amountToSwap, address addressTo, uint8 addressType, address bridgeAddress) public payable {
+    function swapToBridge(uint256 _amountToSwap, address addressTo, uint8 addressType, address bridgeAddress, address destinationCurrency, address feecurrencyid) public payable {
         
         require(msg.value == 0.003 ether, "0.003 ETH required");
 
@@ -107,24 +100,24 @@ contract GNATI_BRIDGE is ERC20{
 
         uint64 verusAmount = uint64(amountToMint / SATS_TO_WEI_STD); // from 18 decimals to 8
 
-        VerusBridge(bridgeAddress).sendTransfer{value: msg.value}(buildReserveTransfer(verusAmount, addressTo, addressType));
+        VerusBridge(bridgeAddress).sendTransfer{value: msg.value}(buildReserveTransfer(verusAmount, addressTo, addressType, destinationCurrency, feecurrencyid));
     }
   
 
-    function buildReserveTransfer (uint64 value, address sendTo, uint8 addressType) private view returns (Objects.CReserveTransfer memory) {
+    function buildReserveTransfer (uint64 value, address sendTo, uint8 addressType, address destinationCurrency, address feecurrencyid) private view returns (Objects.CReserveTransfer memory) {
         
         Objects.CReserveTransfer memory LPtransfer;
       
         LPtransfer.version = 1;
         require(addressType == DEST_PKH || addressType == DEST_ID);
         LPtransfer.destination.destinationtype = addressType; //only can send to r-address or i-address
-        LPtransfer.destcurrencyid = bridgeiaddress;
+        LPtransfer.destcurrencyid = destinationCurrency;
         LPtransfer.destsystemid = address(0);
         LPtransfer.secondreserveid = address(0);
         LPtransfer.flags = VALID;
         LPtransfer.destination.destinationaddress = abi.encodePacked(sendTo);
         LPtransfer.currencyvalue.currency = thisTokeniaddress;
-        LPtransfer.feecurrencyid = vETHiaddress;
+        LPtransfer.feecurrencyid = feecurrencyid;
         LPtransfer.fees = verusvETHTransactionFee;
         LPtransfer.currencyvalue.amount = value;          
         
