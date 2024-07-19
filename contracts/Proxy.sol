@@ -46,12 +46,12 @@ interface VerusBridge {
     function sendTransfer(Objects.CReserveTransfer memory _transfer) external payable;
 }
  
-contract GNATI_BRIDGE is ERC20{
+contract NATI_BRIDGE is ERC20{
     address payable immutable linkedERC20; //the token that this contract will accept to divide an multiply
     address private immutable thisTokeniaddress;  //this proxytokens iaddress in hex
     uint256 private constant cap = 3300000000000000000000000000;  // 3.3B in 18 decimals
     uint256 private constant multiplier = 10000;  // 10k
-    using SafeERC20 for GNATI_BRIDGE;
+    using SafeERC20 for NATI_BRIDGE;
     uint constant SATS_TO_WEI_STD = 10000000000;
 
     error ERC20ExceededCap(uint256 increasedSupply, uint256 cap);
@@ -67,6 +67,7 @@ contract GNATI_BRIDGE is ERC20{
         thisTokeniaddress = iaddress;
     }
 
+    event Bridged(bool fromEthereumToVerus, uint256 amountFrom, uint256amountTo, address receiver);
 
     function transfer(address to, uint256 amount) public virtual override returns (bool) {
 
@@ -74,6 +75,8 @@ contract GNATI_BRIDGE is ERC20{
 
         //send the scaled up amount back to the user on ETH
         ERC20(linkedERC20).transfer(to, (amount * multiplier));
+
+        emit Bridged(false, amount, (amount * multiplier), to);
  
         return true;
     }
@@ -84,10 +87,10 @@ contract GNATI_BRIDGE is ERC20{
         require(msg.value == 0.003 ether, "0.003 ETH required");
 
         // make sure amount being sent is a multiple of the multiplier to stop wei being lost in truncation
-        require(_amountToSwap % multiplier == 0, "not divisable by 1000000");
+        require(_amountToSwap % (multiplier * SATS_TO_WEI_STD) == 0, "Not divisible by 1e14");
 
         // send the real linked ERC20 asset to this contract and it will be stored.
-        GNATI_BRIDGE(linkedERC20).safeTransferFrom(msg.sender, address(this), _amountToSwap);
+        NATI_BRIDGE(linkedERC20).safeTransferFrom(msg.sender, address(this), _amountToSwap);
         
         // amount to mint of proxy token that only the bridge accepts
         uint256 amountToMint = _amountToSwap / multiplier;
@@ -100,7 +103,12 @@ contract GNATI_BRIDGE is ERC20{
 
         uint64 verusAmount = uint64(amountToMint / SATS_TO_WEI_STD); // from 18 decimals to 8
 
+        // prevents any amount smaller than 1e14 to be lost in transaction
+        require(amountToMint > 0 && verusAmount > 0, "Insufficient amount to bridge");
+
         VerusBridge(bridgeAddress).sendTransfer{value: msg.value}(buildReserveTransfer(verusAmount, addressTo, addressType, destinationCurrency, feecurrencyid));
+
+        emit Bridged(true, _amountToSwap, verusAmount, addressTo);
     }
   
 
