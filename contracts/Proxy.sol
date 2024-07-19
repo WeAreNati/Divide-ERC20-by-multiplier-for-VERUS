@@ -60,14 +60,14 @@ contract NATI_BRIDGE is ERC20{
     uint32 constant VALID = 1;
     uint64 constant public verusvETHTransactionFee = 300000; //0.003 vETH 8 decimals
 
+    event Bridged(bool fromEthereumToVerus, uint256 amountFrom, uint256amountTo, address receiver);
+
     constructor (string memory _name, string memory _symbol, address payable _linkedERC20,
         address iaddress) 
         ERC20(_name, _symbol){
         linkedERC20 = _linkedERC20;
         thisTokeniaddress = iaddress;
     }
-
-    event Bridged(bool fromEthereumToVerus, uint256 amountFrom, uint256amountTo, address receiver);
 
     function transfer(address to, uint256 amount) public virtual override returns (bool) {
 
